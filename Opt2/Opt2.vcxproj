@@ -78,10 +78,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <Text Include="g1.txt" />
-    <Text Include="g2.txt" />
+    <Text Include="case0.txt" />
+    <Text Include="case1.txt" />
+    <Text Include="case2.txt" />
+    <Text Include="case3.txt" />
+    <Text Include="case4.txt" />
+    <Text Include="case99.txt" />
     <Text Include="graph.txt" />
-    <Text Include="opt.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="branchbound.cpp" />
@@ -91,6 +94,7 @@
   <ItemGroup>
     <ClInclude Include="branchbound.h" />
     <ClInclude Include="simplex.h" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

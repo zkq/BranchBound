@@ -1,4 +1,5 @@
 #include "simplex.h"
+#include <Windows.h>
 using namespace std;
 
 
@@ -9,10 +10,10 @@ DualSimplex::DualSimplex(const DualSimplex &oldSimplex, int varIndex, int b, boo
 	num_col = oldSimplex.num_col + 1; // b + variable + relaxation
 
 	//申请空间
-	matrix = new double*[num_row];
+	matrix = new ElementType*[num_row];
 	for (int i = 0; i < num_row; i++)
 	{
-		matrix[i] = new double[num_col];
+		matrix[i] = new ElementType[num_col];
 	}
 
 	//把父问题的矩阵复制过来
@@ -23,6 +24,7 @@ DualSimplex::DualSimplex(const DualSimplex &oldSimplex, int varIndex, int b, boo
 			matrix[i][j] = oldSimplex.matrix[i][j];
 		}
 	}
+
 	//添加约束和松弛变量
 	int lastRow = num_row - 1;
 	int lastCol = num_col - 1;
@@ -36,7 +38,6 @@ DualSimplex::DualSimplex(const DualSimplex &oldSimplex, int varIndex, int b, boo
 	{
 		matrix[lastRow][i] = 0;
 	}
-
 	matrix[lastRow][0] = less ? b : -b;
 	matrix[lastRow][varIndex + 1] = less ? 1 : -1;
 	matrix[lastRow][lastCol] = 1; //relax
@@ -61,27 +62,23 @@ DualSimplex::DualSimplex(const DualSimplex &oldSimplex, int varIndex, int b, boo
 			break;
 		}
 	}
-
-	//outputMatrix();
 }
 
 
-
-
-void DualSimplex::setMatrix(int row, int col, double **data)
+void DualSimplex::setMatrix(int row, int col, ElementType **data)
 {
 	clear();
 	num_row = row;
 	num_variable = col - 1;
 
 	num_col = 1 + num_variable + num_row - 1; //b + variable + relaxation
-	cout << "reading from data matrix: " << num_row << ", col:" << col << endl;
+	//cout << "reading from data matrix: " << num_row << ", col:" << col << endl;
 
-	matrix = new double*[num_row];
+	matrix = new ElementType*[num_row];
 	for (int i = 0; i < num_row; i++)
 	{
 		// read b and variables
-		matrix[i] = new double[num_col];
+		matrix[i] = new ElementType[num_col];
 		for (int j = 0; j < col; j++)
 		{
 			matrix[i][j] = data[i][j];
@@ -104,12 +101,12 @@ void DualSimplex::readMatrix(int row, int col, std::ifstream & file)
 	num_col = 1 + num_variable + num_row - 1; // b + variable + relaxation
 	cout << "reading from file row: " << row << ", col:" << col << endl;
 
-	matrix = new double*[num_row];
+	matrix = new ElementType*[num_row];
 	//matrix = (double**)malloc(num_col*num_row*sizeof(double));
 	for (int i = 0; i < num_row; i++)
 	{
 		// read b and variables
-		matrix[i] = new double[num_col];
+		matrix[i] = new ElementType[num_col];
 		for (int j = 0; j < col; j++)
 		{
 			file >> matrix[i][j];
@@ -176,21 +173,14 @@ int DualSimplex::findPivotRow()
 	int pivot_row = -1;
 	for (int i = 1; i < num_row; i++)
 	{
+		double val = matrix[i][0];
+		if (abs(round(val) - val) < 1e-8)
+			matrix[i][0] = round(val);
 		if (matrix[i][0] < lowest)
 		{
 			lowest = matrix[i][0];
 			pivot_row = i;
 		}
-	}
-
-	// promption
-	if (pivot_row == -1)
-	{
-		//cout << "can not find pivot row" << endl;
-	}
-	else
-	{
-		//cout << "pivot row is " << pivot_row << " and its b value is " << lowest << endl;
 	}
 
 	return pivot_row;
@@ -217,17 +207,6 @@ int DualSimplex::findPivotCol(int row)
 			pivot_col = j;
 		}
 	}
-
-	// promption
-	if (pivot_col == -1) // no negative variable
-	{
-		//cout << "can not find pivot col for row " << row << endl;
-	}
-	else
-	{
-		//cout << "pivot col is " << pivot_col << " and its ratio value is " << largest << endl;
-	}
-
 	return pivot_col;
 }
 
@@ -248,6 +227,9 @@ void DualSimplex::pivot(int row, int col)
 			continue;
 		// update each row 
 		multiplier = matrix[i][col];
+		if (multiplier == 0)
+			continue;
+
 		for (int j = 0; j < num_col; j++)
 		{
 			matrix[i][j] -= multiplier * matrix[row][j];
@@ -256,10 +238,10 @@ void DualSimplex::pivot(int row, int col)
 }
 
 // get optimization variables and value
-bool DualSimplex::getOptimization(double &best, vector<double>& variableValue)
+bool DualSimplex::getOptimization(double &best, vector<ElementType>& variableValue)
 {
 	variableValue.clear();
-	for (int i = 1; i < num_col; i++)
+	for (int i = 0; i < num_variable; i++)
 	{
 		variableValue.push_back(0);
 	}
@@ -267,19 +249,28 @@ bool DualSimplex::getOptimization(double &best, vector<double>& variableValue)
 	for (int i = 0; i < totalBv; i++)
 	{
 		int bvNum = bv[i];
-		variableValue[bvNum] = matrix[i + 1][0];
+		if (bvNum < num_variable)
+			variableValue[bvNum] = matrix[i + 1][0];
 	}
 	best = matrix[0][0];
 
 	return true;
 }
 
+
 //  execute solve (after readMatrix or setMatrix)
-bool DualSimplex::solveMinProblemWithDual(double &best, vector<double>& variableValue)
+bool DualSimplex::solveMinProblemWithDual(double &best, vector<ElementType>& variableValue)
 {
+	/*LARGE_INTEGER freq;
+	LARGE_INTEGER start_t, stop_t;
+	double exe_time;
+	QueryPerformanceFrequency(&freq);
+
+	QueryPerformanceCounter(&start_t);*/
+
 	// iteration at most loop times
 	int pivotRow, pivotCol;
-
+	bool flag = false;
 	while (1)
 	{
 		//step1: find pivot row
@@ -289,35 +280,25 @@ bool DualSimplex::solveMinProblemWithDual(double &best, vector<double>& variable
 		{
 			// get optimized solution
 			getOptimization(best, variableValue);
-			return true;
+			flag = true;
+			break;
 		}
 
 		pivotCol = findPivotCol(pivotRow);
 		// exist some row that can never have positive b value
 		if (pivotCol == -1)
-			return false;
+		{
+			//ofstream fout("test.txt");
+			//outputMatrix(fout);
+			//fout.close();
+
+			flag = false;
+			break;
+		}
 
 		//step2 do pivot
 		pivot(pivotRow, pivotCol);
-		//outputMatrix();
-
-		//step3 判断是否可行
-		/*for (int i = 1; i < num_row; i++)
-		{
-		if (matrix[i][0] < 0)// b 为负数
-		{
-		bool pos = true;
-		for (int j = 1; j < num_col; j++)
-		{
-		if (matrix[i][j] < 0)
-		{
-		pos = false;
-		break;
-		}
-		}
-		if (pos)//变量系数全为>=0
-		return false;
-		}
-		}*/
+		
 	}
+	return flag;
 }

@@ -16,9 +16,12 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="graph.txt" />
-    <Text Include="opt.txt" />
-    <Text Include="g1.txt" />
-    <Text Include="g2.txt" />
+    <Text Include="case99.txt" />
+    <Text Include="case0.txt" />
+    <Text Include="case1.txt" />
+    <Text Include="case2.txt" />
+    <Text Include="case3.txt" />
+    <Text Include="case4.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="源.cpp">
@@ -36,6 +39,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="simplex.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -3,11 +3,11 @@
 #define DUAL_SIMPLEX
 
 #include <vector>
-#include <string>
 #include <fstream>
 #include <iostream>
 #include <math.h>
-#include<malloc.h>
+#include "util.h"
+
 
 class DualSimplex
 {
@@ -33,13 +33,13 @@ public:
 	}
 
 
-	void setMatrix(int row, int col, double **data);
+	void setMatrix(int row, int col, ElementType **data);
 	void readMatrix(int row, int col, std::ifstream & file);
 	void outputMatrix(std::ofstream & file);
 	void outputMatrix();
 
 	//  execute solve
-	bool solveMinProblemWithDual(double &best, std::vector<double>& variableValue);
+	bool solveMinProblemWithDual(double &best, std::vector<ElementType>& variableValue);
 	
 
 private:
@@ -52,13 +52,15 @@ private:
 	// execute pivotion
 	void pivot(int row, int col);
 	// get optimization variables and value
-	bool getOptimization(double &best, std::vector<double>& variableValue);
+	bool getOptimization(double &best, std::vector<ElementType>& variableValue);
 
 	int num_variable;// variables
 	int num_row;// row = constraints + objectives
 	int num_col;// col = variables + relaxation + b
-	double **matrix; // matrix for data
+	ElementType **matrix; // matrix for data
 	std::vector<int> bv;
+
+	bool infeasible;
 };
 
 #endif
